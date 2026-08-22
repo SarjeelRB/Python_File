@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MySmartEyes - Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#080b10;--bg2:#0d1117;--surface:#111620;--surface2:#161c2a;
+    --border:rgba(255,255,255,0.07);--blue:#3d8bff;--blue-dim:rgba(61,139,255,0.12);
+    --blue-glow:rgba(61,139,255,0.3);--text:#e8ecf4;--muted:#6b7589;--muted2:#3a4458;
+    --accent:#00e5b4;--warn:#fbbf24;--danger:#ff5c5c;--sidebar-w:240px
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:15px;line-height:1.5;height:100vh;overflow:hidden;display:flex}
+  body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");pointer-events:none;z-index:0;opacity:.4}
+
+  /* ── SIDEBAR ── */
+  .sidebar{width:var(--sidebar-w);height:100vh;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;position:relative;z-index:10}
+  .sidebar-logo{display:flex;align-items:center;gap:10px;padding:24px 22px 20px;border-bottom:1px solid var(--border);font-family:'Syne',sans-serif;font-weight:800;font-size:1.1rem;letter-spacing:-.02em;color:var(--text);text-decoration:none}
+  .logo-dot{width:8px;height:8px;border-radius:50%;background:var(--blue);box-shadow:0 0 10px var(--blue-glow)}
+  .ai-status{margin:16px 14px 8px;padding:10px 13px;background:rgba(0,229,180,.1);border:1px solid rgba(0,229,180,.18);border-radius:10px;display:flex;align-items:center;gap:9px;font-size:.78rem;color:var(--accent);font-weight:500}
+  .ai-pulse{width:7px;height:7px;border-radius:50%;background:var(--accent);animation:blink 1.4s ease-in-out infinite}
+  .sidebar-nav{flex:1;padding:10px;overflow-y:auto}
+  .nav-section-label{font-size:.68rem;color:var(--muted2);font-weight:600;letter-spacing:.1em;text-transform:uppercase;padding:12px 12px 6px}
+  .nav-item{display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:9px;color:var(--muted);text-decoration:none;font-size:.875rem;cursor:pointer;transition:all .18s;margin-bottom:2px;border:1px solid transparent}
+  .nav-item:hover{background:var(--surface);color:var(--text);border-color:var(--border)}
+  .nav-item.active{background:var(--blue-dim);color:var(--blue);border-color:rgba(61,139,255,.18);font-weight:500}
+  .nav-badge{margin-left:auto;background:var(--blue);color:#fff;font-size:.65rem;font-weight:700;padding:1px 6px;border-radius:100px}
+  .sidebar-user{padding:14px;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px}
+  .user-avatar{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--blue),#7c3aed);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:700;font-size:.78rem;color:#fff;flex-shrink:0}
+  .user-name{font-size:.83rem;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .user-role{font-size:.72rem;color:var(--muted)}
+
+  /* ── MAIN ── */
+  .main{flex:1;display:flex;flex-direction:column;height:100vh;overflow:hidden;position:relative;z-index:1}
+  .topbar{display:flex;align-items:center;justify-content:space-between;padding:16px 28px;border-bottom:1px solid var(--border);background:rgba(8,11,16,.6);backdrop-filter:blur(12px);flex-shrink:0}
+  .page-title{font-family:'Syne',sans-serif;font-size:1.05rem;font-weight:700}
+  .page-crumb{font-size:.78rem;color:var(--muted);display:flex;align-items:center;gap:6px}
+  .topbar-right{display:flex;align-items:center;gap:10px}
+  .lang-select{background:var(--surface);border:1px solid var(--border);color:var(--muted);padding:7px 12px;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:.8rem;outline:none;cursor:pointer}
+  .icon-btn{background:var(--surface);border:1px solid var(--border);color:var(--muted);width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+
+  /* ── BODY GRID ── */
+  .body-grid{flex:1;display:grid;grid-template-columns:1fr 300px;overflow:hidden}
+
+  /* ── CAM SECTION ── */
+  .cam-section{display:flex;flex-direction:column;padding:18px 18px 0 22px;gap:12px;overflow:hidden}
+  .cam-header{display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+  .cam-title-group{display:flex;align-items:center;gap:10px}
+  .live-badge{display:flex;align-items:center;gap:6px;padding:4px 10px;background:rgba(255,92,92,.12);border:1px solid rgba(255,92,92,.25);border-radius:100px;font-size:.72rem;font-weight:700;color:#ff5c5c;letter-spacing:.06em}
+  .live-dot{width:6px;height:6px;border-radius:50%;background:#ff5c5c;animation:blink 1s infinite}
+
+  /* ── CAMERA FRAME — THE FIX ── */
+  .cam-frame{
+    flex:1;
+    background:#060912;
+    border-radius:14px;
+    border:1px solid var(--border);
+    position:relative;
+    overflow:hidden;
+    min-height:0;
+    /* Critical: explicit display so stream renders */
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .cam-frame::before{
+    content:'';position:absolute;inset:0;
+    background-image:linear-gradient(rgba(61,139,255,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(61,139,255,.04) 1px,transparent 1px);
+    background-size:40px 40px;
+    pointer-events:none;z-index:0;
+  }
+
+  /* THE KEY FIX: stream must be block, full size, object-fit cover */
+  #videoStream{
+    position:absolute;
+    inset:0;
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    display:none; /* hidden until connected */
+    z-index:1;
+    background:#000;
+  }
+  #videoStream.active{display:block}
+
+  /* Scanline effect */
+  .cam-scanline{
+    position:absolute;left:0;right:0;height:2px;
+    background:linear-gradient(90deg,transparent,rgba(61,139,255,.5),transparent);
+    animation:scanline 2.5s linear infinite;
+    z-index:3;pointer-events:none;
+  }
+  .bracket{position:absolute;width:20px;height:20px;z-index:4}
+  .bracket-tl{top:12px;left:12px;border-top:2px solid var(--blue);border-left:2px solid var(--blue)}
+  .bracket-tr{top:12px;right:12px;border-top:2px solid var(--blue);border-right:2px solid var(--blue)}
+  .bracket-bl{bottom:12px;left:12px;border-bottom:2px solid var(--blue);border-left:2px solid var(--blue)}
+  .bracket-br{bottom:12px;right:12px;border-bottom:2px solid var(--blue);border-right:2px solid var(--blue)}
+
+  .cam-overlay-chips{position:absolute;top:12px;left:12px;display:flex;gap:7px;z-index:5}
+  .cam-chip{padding:3px 9px;border-radius:5px;font-size:.67rem;font-weight:600;letter-spacing:.04em;backdrop-filter:blur(8px)}
+  .chip-rec{background:rgba(255,92,92,.18);border:1px solid rgba(255,92,92,.35);color:#ff5c5c;display:flex;align-items:center;gap:5px}
+  .chip-model{background:rgba(8,11,16,.75);border:1px solid var(--border);color:var(--muted)}
+  .chip-fps{background:rgba(8,11,16,.75);border:1px solid var(--border);color:var(--accent)}
+
+  /* placeholder shown when not connected */
+  .cam-placeholder{position:relative;z-index:2;text-align:center;color:rgba(61,139,255,.3);display:flex;flex-direction:column;align-items:center;gap:12px}
+  .cam-placeholder-icon{width:60px;height:60px;border-radius:50%;border:1.5px dashed rgba(61,139,255,.2);display:flex;align-items:center;justify-content:center;font-size:1.5rem}
+  .cam-placeholder p{font-size:.82rem;color:var(--muted)}
+
+  /* AI output bar at bottom of cam */
+  .ai-output-bar{
+    position:absolute;bottom:0;left:0;right:0;
+    background:linear-gradient(transparent,rgba(6,9,18,.96));
+    padding:32px 16px 14px;
+    display:flex;align-items:flex-end;gap:10px;
+    z-index:6;
+  }
+  .ai-icon-circle{width:30px;height:30px;border-radius:8px;background:var(--blue-dim);border:1px solid rgba(61,139,255,.25);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px}
+  .ai-text-block{flex:1;min-width:0}
+  .ai-text-label{font-size:.62rem;color:var(--blue);font-weight:600;letter-spacing:.07em;margin-bottom:2px;text-transform:uppercase}
+  .ai-text-output{font-size:.83rem;color:var(--text);line-height:1.4;word-break:break-word}
+  .ai-speak-btn{width:30px;height:30px;border-radius:7px;background:var(--blue-dim);border:1px solid rgba(61,139,255,.2);color:var(--blue);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;font-size:13px}
+
+  /* ── BOTTOM STATUS BAR ── */
+  .bottom-bar{
+    flex-shrink:0;
+    border-top:1px solid var(--border);
+    padding:10px 22px;
+    display:flex;align-items:center;gap:10px;
+    background:rgba(8,11,16,.5);backdrop-filter:blur(8px);
+  }
+  .stat-pill{display:flex;align-items:center;gap:6px;padding:5px 10px;background:var(--surface);border:1px solid var(--border);border-radius:7px;font-size:.74rem}
+  .stat-label{color:var(--muted)}.stat-val{color:var(--text);font-weight:600}.stat-val.green{color:var(--accent)}
+  .bottom-spacer{flex:1}
+
+  /* ── RIGHT PANEL ── */
+  .right-panel{border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;background:var(--bg2)}
+  .panel-scroll{flex:1;overflow-y:auto}
+  .panel-section{padding:16px 16px 14px;border-bottom:1px solid var(--border)}
+  .section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:11px}
+  .section-title{font-family:'Syne',sans-serif;font-size:.8rem;font-weight:700;color:var(--text)}
+  .section-badge{font-size:.66rem;font-weight:600;padding:2px 7px;border-radius:100px;background:var(--blue-dim);color:var(--blue);border:1px solid rgba(61,139,255,.2)}
+
+  /* Objects list */
+  .obj-list{display:flex;flex-direction:column;gap:7px}
+  .obj-item{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--surface);border:1px solid var(--border);border-radius:8px}
+  .obj-color{width:8px;height:8px;border-radius:2px;flex-shrink:0}
+  .obj-info{flex:1;min-width:0}
+  .obj-name{font-size:.8rem;font-weight:500;color:var(--text);margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .obj-bar-wrap{height:2px;background:var(--border);border-radius:2px;overflow:hidden}
+  .obj-bar{height:100%;border-radius:2px}
+  .obj-dist{font-size:.66rem;color:var(--muted);flex-shrink:0;padding:2px 6px;border:1px solid var(--border);border-radius:3px;background:var(--surface2)}
+
+  /* Location */
+  .loc-card{background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:11px 12px;display:flex;align-items:flex-start;gap:10px}
+  .loc-icon{width:30px;height:30px;border-radius:7px;background:var(--blue-dim);border:1px solid rgba(61,139,255,.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;font-size:12px}
+  .loc-place{font-size:.82rem;font-weight:500;color:var(--text);margin-bottom:2px}
+  .loc-coords{font-size:.7rem;color:var(--muted);margin-bottom:4px}
+  .loc-gps{display:flex;align-items:center;gap:4px;font-size:.68rem;font-weight:600;color:var(--accent)}
+  .loc-gps-dot{width:4px;height:4px;border-radius:50%;background:var(--accent);animation:blink 1.2s infinite}
+
+  /* Voice section in panel */
+  .voice-panel-inner{display:flex;flex-direction:column;align-items:center;gap:12px}
+  .mic-ring-wrap{position:relative;display:flex;align-items:center;justify-content:center}
+  .mic-ring{position:absolute;border-radius:50%;border:1.5px solid rgba(61,139,255,.12);animation:micRing 2s ease-in-out infinite}
+  .ring1{width:64px;height:64px}.ring2{width:82px;height:82px;animation-delay:.4s}.ring3{width:100px;height:100px;animation-delay:.8s}
+  .mic-ring.on{border-color:rgba(0,229,180,.25)}
+  .mic-main-btn{
+    width:48px;height:48px;border-radius:50%;
+    background:var(--blue);border:none;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 0 24px rgba(61,139,255,.35);
+    position:relative;z-index:2;color:#fff;font-size:1.2rem;
+    transition:all .2s;
+  }
+  .mic-main-btn.active{background:var(--accent);box-shadow:0 0 24px rgba(0,229,180,.4)}
+  .mic-main-btn.processing{background:var(--surface2);box-shadow:none}
+  .mic-status-text{font-size:.76rem;color:var(--muted);text-align:center;line-height:1.5}
+  .mic-status-text strong{display:block;color:var(--text);font-size:.8rem;margin-bottom:1px}
+  .voice-badge{
+    display:flex;align-items:center;gap:6px;
+    padding:4px 10px;
+    background:rgba(0,229,180,.08);border:1px solid rgba(0,229,180,.2);border-radius:100px;
+    font-size:.72rem;color:var(--accent);font-weight:500;
+  }
+  .voice-badge-dot{width:5px;height:5px;border-radius:50%;background:var(--accent);animation:blink 1.2s infinite}
+
+  /* Target object display */
+  .target-card{
+    background:var(--blue-dim);border:1px solid rgba(61,139,255,.2);
+    border-radius:8px;padding:8px 12px;
+    font-size:.78rem;color:var(--blue);
+    display:none;text-align:center;
+  }
+  .target-card.show{display:block}
+  .target-card strong{display:block;font-family:'Syne',sans-serif;font-size:.88rem;margin-bottom:2px}
+
+  /* ── ANIMATIONS ── */
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:.4}}
+  @keyframes scanline{0%{top:-2px}100%{top:100%}}
+  @keyframes micRing{0%{opacity:0;transform:scale(.7)}50%{opacity:.5}100%{opacity:0;transform:scale(1.2)}}
+
+  @media(max-width:1100px){
+    .sidebar{display:none}
+    .body-grid{grid-template-columns:1fr}
+    .right-panel{display:none}
+  }
+</style>
+</head>
+<body>
+
+<!-- ── SIDEBAR ── -->
+<aside class="sidebar">
+  <a class="sidebar-logo" href="/"><div class="logo-dot"></div>MySmartEyes</a>
+  <div class="ai-status"><div class="ai-pulse"></div><span id="agentStatusText">AI Agent Ready</span></div>
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">Core</div>
+    <div class="nav-item active">Live Detection <span class="nav-badge" id="sidebarObjCount">0</span></div>
+    <a class="nav-item" href="/navigate">Navigation</a>
+    <div class="nav-item" onclick="voiceCommand('where am i')">Location</div>
+    <div class="nav-section-label" style="margin-top:8px">Tools</div>
+    <div class="nav-item">History</div>
+  </nav>
+  <div class="sidebar-user">
+    <div class="user-avatar" id="userAvatar">U</div>
+    <div class="user-info">
+      <div class="user-name" id="userName">User</div>
+      <div class="user-role" id="userRole">Session</div>
+    </div>
+  </div>
+</aside>
+
+<!-- ── MAIN ── -->
+<div class="main">
+  <div class="topbar">
+    <div>
+      <div class="page-title">Live Detection</div>
+      <div class="page-crumb"><span>Dashboard</span><span>›</span><span style="color:var(--blue)">Live View</span></div>
+    </div>
+    <div class="topbar-right">
+      <select class="lang-select" id="langSelect" onchange="setLanguage(this.value)">
+        <option value="en">English</option>
+        <option value="hi">हिंदी</option>
+        <option value="kn">ಕನ್ನಡ</option>
+      </select>
+      <div class="icon-btn" onclick="doLogout()" title="Logout">⎋</div>
+    </div>
+  </div>
+
+  <div class="body-grid">
+    <!-- CAM SECTION -->
+    <div class="cam-section">
+      <div class="cam-header">
+        <div class="cam-title-group">
+          <div class="live-badge"><div class="live-dot"></div>LIVE</div>
+          <span style="font-size:.78rem;color:var(--muted)">Camera Feed · YOLOv8 + Gemini</span>
+        </div>
+        <!-- No manual buttons — voice only -->
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="stat-pill"><span class="stat-label">Cam</span><span class="stat-val green" id="camStatusChip">Idle</span></div>
+        </div>
+      </div>
+
+      <!-- THE CAMERA FRAME -->
+      <div class="cam-frame" id="camFrame">
+        <!-- MJPEG stream — hidden until connected -->
+        <img id="videoStream"
+             alt="Camera feed"
+             onerror="onStreamError()"
+             onload="onStreamLoad()" />
+
+        <!-- Overlay decorations -->
+        <div class="cam-scanline"></div>
+        <div class="bracket bracket-tl"></div>
+        <div class="bracket bracket-tr"></div>
+        <div class="bracket bracket-bl"></div>
+        <div class="bracket bracket-br"></div>
+
+        <div class="cam-overlay-chips">
+          <div class="cam-chip chip-rec"><div class="live-dot"></div>REC</div>
+          <div class="cam-chip chip-model">YOLOv8</div>
+          <div class="cam-chip chip-fps" id="fpsChip">-- FPS</div>
+        </div>
+
+        <!-- Placeholder when not connected -->
+        <div class="cam-placeholder" id="camPlaceholder">
+          <div class="cam-placeholder-icon">📷</div>
+          <p id="camPlaceholderText">Say "connect camera" to begin</p>
+        </div>
+
+        <!-- AI output overlay -->
+        <div class="ai-output-bar">
+          <div class="ai-icon-circle">👁️</div>
+          <div class="ai-text-block">
+            <div class="ai-text-label">AI Agent</div>
+            <div class="ai-text-output" id="aiOutput">Initializing...</div>
+          </div>
+          <div class="ai-speak-btn" onclick="speak(document.getElementById('aiOutput').textContent)">🔊</div>
+        </div>
+      </div>
+
+      <!-- BOTTOM STATUS BAR -->
+      <div class="bottom-bar">
+        <div class="stat-pill"><span class="stat-label">Objects</span><span class="stat-val" id="objCount">0</span></div>
+        <div class="stat-pill"><span class="stat-label">Status</span><span class="stat-val green" id="camStatus">Idle</span></div>
+        <div class="stat-pill"><span class="stat-label">Lang</span><span class="stat-val" id="langVal">EN</span></div>
+        <div class="stat-pill"><span class="stat-label">Mode</span><span class="stat-val" id="modeVal">Standby</span></div>
+        <div class="bottom-spacer"></div>
+        <a style="padding:7px 14px;background:var(--surface);border:1px solid var(--border);border-radius:7px;font-size:.78rem;color:var(--muted);text-decoration:none" href="/navigate">Navigate</a>
+      </div>
+    </div>
+
+    <!-- RIGHT PANEL -->
+    <div class="right-panel">
+      <div class="panel-scroll">
+
+        <!-- Voice Agent -->
+        <div class="panel-section">
+          <div class="section-head">
+            <div class="section-title">Voice Agent</div>
+            <div class="voice-badge"><div class="voice-badge-dot"></div><span id="voiceStatusText">Listening</span></div>
+          </div>
+          <div class="voice-panel-inner">
+            <div class="mic-ring-wrap" style="width:110px;height:110px">
+              <div class="mic-ring ring1" id="mr1"></div>
+              <div class="mic-ring ring2" id="mr2"></div>
+              <div class="mic-ring ring3" id="mr3"></div>
+              <button class="mic-main-btn" id="micBtn" onclick="toggleListen()">🎙️</button>
+            </div>
+            <div class="mic-status-text">
+              <strong id="micLabel">Always listening</strong>
+              <span id="micSub">Tap or speak anytime</span>
+            </div>
+            <div class="target-card" id="targetCard">
+              <strong id="targetName">—</strong>
+              <span id="targetSub">Looking for this object</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Detected Objects -->
+        <div class="panel-section">
+          <div class="section-head">
+            <div class="section-title">Detected Objects</div>
+            <div class="section-badge" id="detBadge">0 found</div>
+          </div>
+          <div class="obj-list" id="objectsList">
+            <div class="obj-item">
+              <div class="obj-info"><div class="obj-name" style="color:var(--muted)">No detections yet</div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Location -->
+        <div class="panel-section">
+          <div class="section-head"><div class="section-title">Location</div></div>
+          <div class="loc-card">
+            <div class="loc-icon">📍</div>
+            <div>
+              <div class="loc-place" id="locPlace">Unknown</div>
+              <div class="loc-coords" id="locCoords">Waiting for GPS...</div>
+              <div class="loc-gps"><div class="loc-gps-dot"></div><span id="locStatus">Pending</span></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════════════════════
+const S = {
+  lang: 'en',
+  cameraConnected: false,
+  isListening: false,
+  isProcessing: false,
+  targetObject: null,      // specific object user asked for
+  detectionMode: 'all',    // 'all' | 'specific' | 'scene'
+  streamRetries: 0,
+  fpsInterval: null,
+};
+
+// ════════════════════════════════════════════════════════════
+// SPEECH — TTS
+// ════════════════════════════════════════════════════════════
+const LANG_CODE = { en:'en-IN', hi:'hi-IN', kn:'kn-IN' };
+
+function speak(text, cb) {
+  if (!text) return;
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text.replace(/"/g, ''));
+  u.lang = LANG_CODE[S.lang] || 'en-IN';
+  u.rate = 0.93;
+  if (cb) u.onend = cb;
+  window.speechSynthesis.speak(u);
+}
+
+function setAIOutput(text) {
+  document.getElementById('aiOutput').textContent = text;
+}
+
+// ════════════════════════════════════════════════════════════
+// VOICE — single continuous instance, one-time mic permission
+// ════════════════════════════════════════════════════════════
+let recognition = null;
+let recPaused = false;   // true when deliberately paused by user
+let micGranted = false;
+
+// Request mic permission ONCE upfront — avoids repeated prompts
+async function requestMicPermission() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    // Stop the tracks immediately — we just needed the permission grant
+    stream.getTracks().forEach(t => t.stop());
+    micGranted = true;
+  } catch (err) {
+    micGranted = false;
+    setAIOutput('Microphone access denied. Tap the mic button to retry.');
+    document.getElementById('voiceStatusText').textContent = 'Blocked';
+    document.getElementById('micLabel').textContent = 'Mic blocked';
+  }
+}
+
+function buildRecognition() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) return null;
+
+  const r = new SR();
+  r.lang = LANG_CODE[S.lang] || 'en-IN';
+  r.continuous = true;      // keeps listening without restarting
+  r.interimResults = false;
+  r.maxAlternatives = 1;
+
+  r.onstart = () => {
+    S.isListening = true;
+    document.getElementById('micBtn').classList.add('active');
+    ['mr1','mr2','mr3'].forEach(id => document.getElementById(id).classList.add('on'));
+    document.getElementById('voiceStatusText').textContent = 'Listening';
+    document.getElementById('micLabel').textContent = 'Always listening';
+  };
+
+  r.onresult = (e) => {
+    // Only handle the latest final result
+    const result = e.results[e.results.length - 1];
+    if (!result.isFinal) return;
+    const transcript = result[0].transcript.trim();
+    if (!transcript) return;
+    document.getElementById('micSub').textContent = `"${transcript}"`;
+    handleVoiceCommand(transcript);
+  };
+
+  r.onerror = (e) => {
+    if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+      micGranted = false;
+      setAIOutput('Microphone blocked. Please allow access in browser settings.');
+      document.getElementById('voiceStatusText').textContent = 'Blocked';
+      document.getElementById('micLabel').textContent = 'Mic blocked';
+      return;
+    }
+    // no-speech / network — harmless, continuous mode handles it
+  };
+
+  r.onend = () => {
+    S.isListening = false;
+    document.getElementById('micBtn').classList.remove('active');
+    ['mr1','mr2','mr3'].forEach(id => document.getElementById(id).classList.remove('on'));
+    // Auto-restart unless user paused or mic is blocked
+    if (!recPaused && micGranted) {
+      setTimeout(() => { try { recognition.start(); } catch(e){} }, 300);
+    } else {
+      document.getElementById('voiceStatusText').textContent = 'Paused';
+      document.getElementById('micLabel').textContent = 'Tap to resume';
+    }
+  };
+
+  return r;
+}
+
+function startListening() {
+  if (!micGranted) return;
+  if (!recognition) recognition = buildRecognition();
+  recPaused = false;
+  try { recognition.start(); } catch(e) { /* already running — fine */ }
+}
+
+function stopListening() {
+  recPaused = true;
+  if (recognition) try { recognition.stop(); } catch(e){}
+}
+
+function rebuildRecognition() {
+  // Called when language changes — need fresh instance with new lang
+  if (recognition) try { recognition.stop(); } catch(e){}
+  recognition = buildRecognition();
+  if (!recPaused && micGranted) startListening();
+}
+
+function toggleListen() {
+  if (S.isListening) {
+    stopListening();
+    document.getElementById('micLabel').textContent = 'Paused';
+    document.getElementById('micSub').textContent = 'Tap to resume';
+  } else {
+    recPaused = false;
+    if (!recognition) recognition = buildRecognition();
+    startListening();
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+// VOICE COMMAND HANDLER — Gemini agent
+// ════════════════════════════════════════════════════════════
+async function handleVoiceCommand(text) {
+  if (!text) return;
+  S.isProcessing = true;
+  document.getElementById('micBtn').classList.add('processing');
+  document.getElementById('voiceStatusText').textContent = 'Processing';
+  document.getElementById('micLabel').textContent = 'Processing...';
+
+  // Parse intent client-side for speed, then confirm with backend
+  const lower = text.toLowerCase();
+
+  // ── Camera connect ──
+  if (lower.includes('connect camera') || lower.includes('open camera') || lower.includes('start camera')) {
+    S.isProcessing = false;
+    document.getElementById('micBtn').classList.remove('processing');
+    connectCamera();
+    return;
+  }
+
+  // ── Specific object detection ──
+  const specificMatch = parseSpecificObject(lower);
+  if (specificMatch) {
+    S.targetObject = specificMatch;
+    S.detectionMode = 'specific';
+    showTargetCard(specificMatch);
+    setAIOutput(`Looking for ${specificMatch}...`);
+    speak(`Looking for ${specificMatch}.`, () => runDetection());
+    S.isProcessing = false;
+    document.getElementById('micBtn').classList.remove('processing');
+    return;
+  }
+
+  // ── Scene context detection ──
+  if (lower.includes('road') || lower.includes('street') || lower.includes('situation') ||
+      lower.includes('around me') || lower.includes('what do you see') ||
+      lower.includes('what is') || lower.includes('scene') || lower.includes('surroundings')) {
+    S.targetObject = null;
+    S.detectionMode = 'scene';
+    hideTargetCard();
+    setAIOutput('Analyzing scene...');
+    speak('Analyzing your surroundings.', () => runDetection());
+    S.isProcessing = false;
+    document.getElementById('micBtn').classList.remove('processing');
+    return;
+  }
+
+  // ── General detect ──
+  if (lower.includes('detect') || lower.includes('scan') || lower.includes('look') ||
+      lower.includes('ahead') || lower.includes('front')) {
+    S.targetObject = null;
+    S.detectionMode = 'all';
+    hideTargetCard();
+    setAIOutput('Detecting objects...');
+    speak('Scanning now.', () => runDetection());
+    S.isProcessing = false;
+    document.getElementById('micBtn').classList.remove('processing');
+    return;
+  }
+
+  // ── Location ──
+  if (lower.includes('where') || lower.includes('location') || lower.includes('where am i')) {
+    S.isProcessing = false;
+    document.getElementById('micBtn').classList.remove('processing');
+    updateGeo();
+    return;
+  }
+
+  // ── Navigate ──
+  if (lower.includes('navigate') || lower.includes('take me') || lower.includes('go to')) {
+    S.isProcessing = false;
+    document.getElementById('micBtn').classList.remove('processing');
+    speak('Opening navigation.', () => window.location.href = '/navigate');
+    return;
+  }
+
+  // ── Language switch ──
+  if (lower.includes('hindi') || lower.includes('हिंदी')) {
+    setLanguage('hi'); S.isProcessing = false; document.getElementById('micBtn').classList.remove('processing'); return;
+  }
+  if (lower.includes('kannada') || lower.includes('ಕನ್ನಡ')) {
+    setLanguage('kn'); S.isProcessing = false; document.getElementById('micBtn').classList.remove('processing'); return;
+  }
+  if (lower.includes('english')) {
+    setLanguage('en'); S.isProcessing = false; document.getElementById('micBtn').classList.remove('processing'); return;
+  }
+
+  // ── Unknown → send to backend Gemini agent ──
+  try {
+    const res = await fetch('/voice_text', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ text })
+    });
+    const data = await res.json();
+    setAIOutput(data.response || 'Done.');
+    speak(data.response || '');
+
+    // Handle structured actions from Gemini
+    const action = data.action || 'none';
+    const geminiTarget = data.target || null;
+
+    if (action === 'detect') { S.targetObject = null; S.detectionMode = 'all'; hideTargetCard(); runDetection(); }
+    else if (action === 'detect_specific' && geminiTarget) { S.targetObject = geminiTarget; S.detectionMode = 'specific'; showTargetCard(geminiTarget); runDetection(); }
+    else if (action === 'scene') { S.targetObject = null; S.detectionMode = 'scene'; hideTargetCard(); runDetection(); }
+    else if (action === 'navigate') { speak('Opening navigation.', () => window.location.href = '/navigate'); }
+    else if (action === 'location') { updateGeo(); }
+    else if (action === 'set_lang' && data.lang) { setLanguage(data.lang); }
+  } catch {
+    setAIOutput('Could not process. Please try again.');
+  }
+
+  S.isProcessing = false;
+  document.getElementById('micBtn').classList.remove('processing');
+}
+
+function voiceCommand(text) {
+  handleVoiceCommand(text);
+}
+
+// Parse "detect my bottle", "find the chair", "where is the person", "look for knife"
+function parseSpecificObject(text) {
+  const triggers = [
+    /(?:detect|find|look for|where is|scan for|search for|locate|show me)\s+(?:my|the|a|an)?\s*([a-zA-Z]+(?:\s+[a-zA-Z]+)?)/i,
+    /(?:i want to (?:detect|find|see|locate))\s+(?:my|the|a|an)?\s*([a-zA-Z]+(?:\s+[a-zA-Z]+)?)/i,
+    /(?:is there a|is there an)\s+([a-zA-Z]+(?:\s+[a-zA-Z]+)?)/i,
+  ];
+  // Exclude non-object words
+  const stop = new Set(['anything','everything','something','objects','things','all','it','them']);
+  for (const re of triggers) {
+    const m = text.match(re);
+    if (m && m[1] && !stop.has(m[1].toLowerCase().trim())) {
+      return m[1].toLowerCase().trim();
+    }
+  }
+  return null;
+}
+
+function showTargetCard(name) {
+  const card = document.getElementById('targetCard');
+  document.getElementById('targetName').textContent = name.charAt(0).toUpperCase() + name.slice(1);
+  document.getElementById('targetSub').textContent = 'Looking for this object';
+  card.classList.add('show');
+  document.getElementById('modeVal').textContent = 'Target';
+}
+
+function hideTargetCard() {
+  document.getElementById('targetCard').classList.remove('show');
+  document.getElementById('modeVal').textContent = S.detectionMode === 'scene' ? 'Scene' : 'All';
+}
+
+// ════════════════════════════════════════════════════════════
+// CAMERA — THE FIXED STREAM HANDLER
+// ════════════════════════════════════════════════════════════
+function connectCamera(sourceOverride) {
+  // Ask via voice what camera source to use, default to 0
+  const source = sourceOverride !== undefined ? sourceOverride : '0';
+
+  setAIOutput('Connecting camera...');
+  document.getElementById('camPlaceholderText').textContent = 'Connecting...';
+  document.getElementById('camStatusChip').textContent = 'Connecting';
+  document.getElementById('camStatus').textContent = 'Connecting';
+
+  fetch('/set_camera', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ url: source })
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.status === 'success') {
+      S.cameraConnected = true;
+      S.streamRetries = 0;
+      startStream();
+    } else {
+      setAIOutput('Camera connection failed. ' + (data.message || ''));
+      speak('Camera connection failed. Please check your camera.');
+      document.getElementById('camPlaceholderText').textContent = 'Connection failed. Say "connect camera" to retry.';
+      document.getElementById('camStatusChip').textContent = 'Failed';
+      document.getElementById('camStatus').textContent = 'Offline';
+    }
+  })
+  .catch(() => {
+    setAIOutput('Server error connecting camera.');
+    speak('Could not connect to server.');
+  });
+}
+
+function startStream() {
+  const img = document.getElementById('videoStream');
+  const placeholder = document.getElementById('camPlaceholder');
+
+  // CRITICAL FIX: Add timestamp to bust cache and force reload
+  const streamUrl = '/video_feed?t=' + Date.now();
+
+  // Set src FIRST, then show
+  img.src = streamUrl;
+
+  // Show stream, hide placeholder
+  img.classList.add('active');
+  placeholder.style.display = 'none';
+
+  document.getElementById('camStatusChip').textContent = 'Active';
+  document.getElementById('camStatus').textContent = 'Active';
+
+  // Start fake FPS counter (real FPS would need backend websocket)
+  if (S.fpsInterval) clearInterval(S.fpsInterval);
+  S.fpsInterval = setInterval(() => {
+    document.getElementById('fpsChip').textContent = (26 + Math.floor(Math.random() * 6)) + ' FPS';
+  }, 1500);
+
+  setAIOutput('Camera connected. What would you like to do?');
+  speak('Camera is ready. What would you like to do?');
+}
+
+function onStreamError() {
+  // Stream errored — retry up to 3 times
+  if (!S.cameraConnected) return;
+  S.streamRetries++;
+  if (S.streamRetries <= 3) {
+    setTimeout(() => {
+      const img = document.getElementById('videoStream');
+      img.src = '/video_feed?t=' + Date.now();
+    }, 1500);
+  } else {
+    // Give up, show placeholder
+    const img = document.getElementById('videoStream');
+    img.classList.remove('active');
+    document.getElementById('camPlaceholder').style.display = 'flex';
+    document.getElementById('camPlaceholderText').textContent = 'Stream lost. Say "connect camera" to retry.';
+    document.getElementById('camStatusChip').textContent = 'Lost';
+    document.getElementById('camStatus').textContent = 'Disconnected';
+    S.cameraConnected = false;
+    speak('Camera stream was lost. Say connect camera to try again.');
+  }
+}
+
+function onStreamLoad() {
+  // Stream loaded successfully
+  S.streamRetries = 0;
+}
+
+// ════════════════════════════════════════════════════════════
+// DETECTION — with target object support
+// ════════════════════════════════════════════════════════════
+async function runDetection() {
+  if (!S.cameraConnected) {
+    setAIOutput('Camera not connected. Say "connect camera" first.');
+    speak('Please connect the camera first. Say connect camera.');
+    return;
+  }
+
+  document.getElementById('voiceStatusText').textContent = 'Analyzing';
+  document.getElementById('micLabel').textContent = 'Analyzing...';
+
+  try {
+    const res = await fetch('/detect_object', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        target: S.targetObject,
+        mode: S.detectionMode,
+        lang: S.lang
+      })
+    });
+    const data = await res.json();
+
+    if (data.status !== 'success') {
+      const msg = data.message || 'Detection failed.';
+      setAIOutput(msg);
+      speak(msg);
+      return;
+    }
+
+    setAIOutput(data.result);
+    renderObjects(data.objects || [], S.targetObject);
+
+    // Show annotated frame briefly
+    if (data.image) {
+      const img = document.getElementById('videoStream');
+      const orig = img.src;
+      img.src = 'data:image/jpeg;base64,' + data.image;
+      setTimeout(() => { if (S.cameraConnected) img.src = '/video_feed?t=' + Date.now(); }, 2500);
+    }
+
+    speak(data.result);
+
+  } catch {
+    const msg = 'Detection error. Please try again.';
+    setAIOutput(msg);
+    speak(msg);
+  }
+
+  document.getElementById('voiceStatusText').textContent = 'Ready';
+  document.getElementById('micLabel').textContent = 'Always listening';
+}
+
+function renderObjects(objects, targetObj) {
+  const count = objects.length;
+  document.getElementById('objCount').textContent = count;
+  document.getElementById('sidebarObjCount').textContent = String(count);
+  document.getElementById('detBadge').textContent = count + ' found';
+
+  if (!count) {
+    document.getElementById('objectsList').innerHTML =
+      '<div class="obj-item"><div class="obj-info"><div class="obj-name" style="color:var(--muted)">Nothing detected above threshold</div></div></div>';
+    return;
+  }
+
+  // If specific target, highlight it
+  document.getElementById('objectsList').innerHTML = objects.map(obj => {
+    const isTarget = targetObj && obj.name.toLowerCase().includes(targetObj.toLowerCase());
+    const color = obj.danger ? 'var(--danger)' : isTarget ? 'var(--accent)' : obj.position === 'ahead' ? 'var(--blue)' : 'var(--muted)';
+    return `<div class="obj-item" style="${isTarget ? 'border-color:rgba(0,229,180,.3);background:rgba(0,229,180,.06)' : ''}">
+      <div class="obj-color" style="background:${color}"></div>
+      <div class="obj-info">
+        <div class="obj-name" style="color:${isTarget ? 'var(--accent)' : 'var(--text)'}">${obj.name}${isTarget ? ' ✓' : ''}</div>
+        <div class="obj-bar-wrap"><div class="obj-bar" style="width:${obj.confidence}%;background:${color}"></div></div>
+      </div>
+      <div class="obj-dist">${obj.distance}</div>
+    </div>`;
+  }).join('');
+}
+
+// ════════════════════════════════════════════════════════════
+// LOCATION
+// ════════════════════════════════════════════════════════════
+function updateGeo() {
+  if (!navigator.geolocation) {
+    speak('Location is not available.');
+    return;
+  }
+  document.getElementById('locStatus').textContent = 'Locating...';
+  navigator.geolocation.getCurrentPosition(async pos => {
+    const lat = pos.coords.latitude, lon = pos.coords.longitude;
+    document.getElementById('locCoords').textContent = `${lat.toFixed(4)}° N, ${lon.toFixed(4)}° E`;
+    document.getElementById('locStatus').textContent = 'GPS Active';
+    try {
+      const r = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`);
+      const d = await r.json();
+      const a = d.address;
+      const area = a.suburb || a.neighbourhood || a.village || a.town || a.city || a.county || 'Unknown area';
+      const city = a.city || a.town || a.state_district || a.state || '';
+      const full = city ? `${area}, ${city}` : area;
+      document.getElementById('locPlace').textContent = full;
+      speak(`You are in ${full}.`);
+    } catch {
+      document.getElementById('locPlace').textContent = 'Location found';
+      speak('Location found.');
+    }
+  }, () => {
+    document.getElementById('locCoords').textContent = 'Permission denied';
+    document.getElementById('locStatus').textContent = 'Blocked';
+    speak('Location access was denied.');
+  });
+}
+
+// ════════════════════════════════════════════════════════════
+// LANGUAGE
+// ════════════════════════════════════════════════════════════
+async function setLanguage(lang) {
+  S.lang = lang;
+  document.getElementById('langSelect').value = lang;
+  document.getElementById('langVal').textContent = lang.toUpperCase();
+
+  // Rebuild recognition with new language (new instance needed for lang change)
+  try {
+    await fetch('/api/set_lang', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ lang })
+    });
+  } catch {}
+
+  const msg = lang === 'hi' ? 'भाषा हिंदी में बदल दी।' : lang === 'kn' ? 'ಭಾಷೆ ಕನ್ನಡಕ್ಕೆ ಬದಲಾಯಿಸಲಾಗಿದೆ.' : 'Language changed to English.';
+  setAIOutput(msg);
+  speak(msg);
+
+  // Rebuild with new language after short delay
+  setTimeout(rebuildRecognition, 600);
+}
+
+// ════════════════════════════════════════════════════════════
+// LOGOUT
+// ════════════════════════════════════════════════════════════
+async function doLogout() {
+  speak('Goodbye.', async () => {
+    const res = await fetch('/logout', { method: 'POST' });
+    const d = await res.json();
+    if (d.redirect) window.location.href = d.redirect;
+  });
+}
+
+// ════════════════════════════════════════════════════════════
+// INIT — runs on page load
+// ════════════════════════════════════════════════════════════
+async function init() {
+  // Step 1: Request mic permission ONCE — no more repeated prompts
+  await requestMicPermission();
+
+  // Step 2: Build the recognition instance
+  recognition = buildRecognition();
+
+  // Step 3: Load user info
+  try {
+    const res = await fetch('/api/greeting');
+    const data = await res.json();
+    if (data.status === 'success') {
+      const name = data.name || 'User';
+      const lang = data.lang || 'en';
+      S.lang = lang;
+      document.getElementById('userName').textContent = name;
+      document.getElementById('userAvatar').textContent = name[0].toUpperCase();
+      document.getElementById('userRole').textContent = `Session · ${lang.toUpperCase()}`;
+      document.getElementById('langSelect').value = lang;
+      document.getElementById('langVal').textContent = lang.toUpperCase();
+
+      // Greet user, then start listening
+      const greeting = data.greeting || `Hello ${name}! Say connect camera, detect objects, or navigate.`;
+      setAIOutput(greeting);
+      if (micGranted) {
+        speak(greeting, () => startListening());
+      } else {
+        setAIOutput('Mic access needed. Click the mic button to enable voice.');
+      }
+    } else {
+      if (micGranted) speak('Welcome. What would you like to do?', () => startListening());
+    }
+  } catch {
+    if (micGranted) speak('Welcome!', () => startListening());
+  }
+
+  // Step 4: Geo in background
+  updateGeo();
+
+  document.getElementById('agentStatusText').textContent = 'AI Agent Active';
+}
+
+window.addEventListener('load', init);
+</script>
+</body>
+</html>

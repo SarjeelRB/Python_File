@@ -1,0 +1,11 @@
+{
+  "python.defaultInterpreterPath": "C:\\Users\\SARJEEL\\AppData\\Local\\Programs\\Python\\Python313\\python.exe",
+  "python.languageServer": "Pylance",
+  "python.analysis.typeCheckingMode": "off",
+  "python.analysis.diagnosticMode": "openFilesOnly",
+  "python.analysis.ignore": ["**/*"],
+  "[python]": {
+    "editor.defaultFormatter": "ms-python.python"
+  },
+  "pyrefly.enable": false
+}

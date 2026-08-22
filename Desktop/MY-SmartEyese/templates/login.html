@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MySmartEyes — Sign In</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#080b10;--bg2:#0d1117;--surface:#111620;--surface2:#161c2a;--border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.13);--blue:#3d8bff;--blue-dim:rgba(61,139,255,0.12);--blue-glow:rgba(61,139,255,0.3);--text:#e8ecf4;--muted:#6b7589;--muted2:#9aa3b5;--accent:#00e5b4;--error:#ff5c5c}
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:16px;line-height:1.6;display:flex;align-items:center;justify-content:center;min-height:100vh;overflow:hidden}
+  body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");pointer-events:none;z-index:0;opacity:.4}
+
+  .orb{position:fixed;border-radius:50%;pointer-events:none;z-index:0}
+  .orb-1{width:600px;height:600px;background:radial-gradient(circle,rgba(61,139,255,.07) 0%,transparent 70%);top:-100px;left:-100px;animation:floatA 10s ease-in-out infinite}
+  .orb-2{width:400px;height:400px;background:radial-gradient(circle,rgba(0,229,180,.05) 0%,transparent 70%);bottom:-80px;right:-80px;animation:floatB 13s ease-in-out infinite}
+
+  @keyframes floatA{0%,100%{transform:translateY(0)}50%{transform:translateY(-30px)}}
+  @keyframes floatB{0%,100%{transform:translateY(0)}50%{transform:translateY(24px)}}
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
+  @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  @keyframes micPulse{0%,100%{box-shadow:0 0 0 0 rgba(61,139,255,.5)}70%{box-shadow:0 0 0 16px rgba(61,139,255,0)}}
+  @keyframes micActive{0%,100%{box-shadow:0 0 0 0 rgba(0,229,180,.6)}70%{box-shadow:0 0 0 20px rgba(0,229,180,0)}}
+  @keyframes ringEx{0%{opacity:.5;transform:scale(.5)}100%{opacity:0;transform:scale(1.8)}}
+  @keyframes ripple{0%{transform:scale(0);opacity:.6}100%{transform:scale(4);opacity:0}}
+  @keyframes tapPulse{0%,100%{opacity:.5;transform:scale(1)}50%{opacity:1;transform:scale(1.08)}}
+  @keyframes overlayOut{to{opacity:0;pointer-events:none}}
+
+  /* ── FULLSCREEN OVERLAY ─────────────────────────────────────── */
+  #tapOverlay{
+    position:fixed;inset:0;z-index:1000;
+    background:var(--bg);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:32px;
+    cursor:pointer;
+    transition:opacity .6s ease;
+  }
+  #tapOverlay.hiding{opacity:0;pointer-events:none}
+
+  .ov-logo{display:flex;align-items:center;gap:12px;font-family:'Syne',sans-serif;font-weight:800;font-size:1.6rem;color:var(--text);letter-spacing:-.02em}
+  .ov-logo-dot{width:11px;height:11px;border-radius:50%;background:var(--blue);box-shadow:0 0 16px var(--blue-glow);animation:blink 1.8s ease-in-out infinite}
+
+  .ov-mic-wrap{position:relative;display:flex;align-items:center;justify-content:center;width:160px;height:160px}
+  .ov-ring{position:absolute;border-radius:50%;border:1.5px solid rgba(61,139,255,.15);animation:ringEx 2.8s ease-out infinite}
+  .ov-ring:nth-child(1){width:140px;height:140px}
+  .ov-ring:nth-child(2){width:140px;height:140px;animation-delay:.9s}
+  .ov-ring:nth-child(3){width:140px;height:140px;animation-delay:1.8s}
+  .ov-mic{position:relative;z-index:2;width:88px;height:88px;border-radius:50%;background:var(--blue);display:flex;align-items:center;justify-content:center;font-size:2.2rem;box-shadow:0 0 40px rgba(61,139,255,.4);animation:tapPulse 2s ease-in-out infinite}
+
+  .ov-text{text-align:center}
+  .ov-text h2{font-family:'Syne',sans-serif;font-weight:800;font-size:1.7rem;letter-spacing:-.03em;margin-bottom:8px}
+  .ov-text p{color:var(--muted2);font-size:.95rem;max-width:320px}
+
+  .ov-hint{display:flex;align-items:center;gap:8px;padding:10px 20px;background:var(--blue-dim);border:1px solid rgba(61,139,255,.2);border-radius:100px;font-size:.82rem;color:var(--blue);animation:tapPulse 2s ease-in-out infinite}
+  .ov-hint-dot{width:6px;height:6px;border-radius:50%;background:var(--blue);animation:blink 1s infinite}
+
+  /* ripple effect on click */
+  .ripple-circle{position:fixed;border-radius:50%;background:rgba(61,139,255,.2);width:60px;height:60px;margin-left:-30px;margin-top:-30px;pointer-events:none;animation:ripple .7s ease-out forwards;z-index:1001}
+
+  /* ── MAIN CARD ──────────────────────────────────────────────── */
+  .card{
+    position:relative;z-index:1;
+    width:100%;max-width:460px;
+    background:var(--bg2);
+    border:1px solid var(--border2);
+    border-radius:20px;
+    padding:40px;
+    box-shadow:0 32px 80px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.04);
+    animation:fadeUp .5s ease both;
+    /* hidden until overlay dismissed */
+    opacity:0;pointer-events:none;
+    transition:opacity .5s ease .2s;
+  }
+  .card.visible{opacity:1;pointer-events:all}
+
+  .logo{display:flex;align-items:center;justify-content:center;gap:10px;font-family:'Syne',sans-serif;font-weight:800;font-size:1.3rem;color:var(--text);letter-spacing:-.02em;margin-bottom:30px}
+  .logo-dot{width:9px;height:9px;border-radius:50%;background:var(--blue);box-shadow:0 0 12px var(--blue-glow)}
+
+  /* voice section */
+  .voice-section{display:flex;flex-direction:column;align-items:center;gap:14px;margin-bottom:28px}
+  .mic-wrap{position:relative;display:flex;align-items:center;justify-content:center;width:120px;height:120px}
+  .mic-ring{position:absolute;width:110px;height:110px;border-radius:50%;border:1.5px solid rgba(61,139,255,.18);animation:ringEx 2.4s ease-out infinite}
+  .mic-ring:nth-child(2){animation-delay:.7s}
+  .mic-ring:nth-child(3){animation-delay:1.4s}
+  .mic-ring.on{border-color:rgba(0,229,180,.3)}
+  .mic-btn{
+    position:relative;z-index:2;
+    width:72px;height:72px;border-radius:50%;
+    background:var(--blue);border:none;
+    display:flex;align-items:center;justify-content:center;
+    cursor:pointer;color:#fff;font-size:1.6rem;
+    box-shadow:0 0 30px rgba(61,139,255,.35);
+    transition:all .2s;
+    animation:micPulse 2s ease-in-out infinite
+  }
+  .mic-btn:hover{transform:scale(1.06)}
+  .mic-btn.listening{background:var(--accent);box-shadow:0 0 30px rgba(0,229,180,.4);animation:micActive 1.2s ease-in-out infinite}
+  .mic-btn.processing{background:var(--surface2);animation:none;box-shadow:none}
+
+  .v-title{font-family:'Syne',sans-serif;font-weight:700;font-size:.95rem;color:var(--text)}
+  .v-sub{font-size:.82rem;color:var(--muted2);text-align:center;max-width:300px}
+  .v-transcript{
+    width:100%;padding:10px 14px;
+    background:var(--surface);border:1px solid var(--border);border-radius:8px;
+    font-size:.82rem;color:var(--muted2);text-align:center;font-style:italic;
+    display:none;min-height:42px
+  }
+  .v-transcript.show{display:block}
+  .v-step{
+    display:none;width:100%;padding:9px 14px;
+    background:var(--blue-dim);border:1px solid rgba(61,139,255,.2);border-radius:8px;
+    font-size:.8rem;color:var(--muted2);text-align:center
+  }
+  .v-step.show{display:block}
+  .v-step strong{color:var(--blue)}
+
+  /* status badge */
+  .v-status-badge{
+    display:flex;align-items:center;gap:7px;
+    padding:5px 12px;
+    background:rgba(0,229,180,.08);border:1px solid rgba(0,229,180,.18);border-radius:100px;
+    font-size:.75rem;color:var(--accent);font-weight:500;
+    display:none
+  }
+  .v-status-badge.show{display:flex}
+  .v-status-dot{width:5px;height:5px;border-radius:50%;background:var(--accent);animation:blink 1.2s infinite}
+
+  /* divider */
+  .divider{display:flex;align-items:center;gap:12px;margin-bottom:22px;color:var(--muted);font-size:.78rem}
+  .divider-line{flex:1;height:1px;background:var(--border)}
+
+  /* tabs */
+  .tab-row{display:flex;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:4px;margin-bottom:22px}
+  .tab-btn{flex:1;padding:9px;border:none;border-radius:7px;background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:.875rem;font-weight:500;cursor:pointer;transition:all .2s}
+  .tab-btn.active{background:var(--blue);color:#fff;box-shadow:0 0 20px rgba(61,139,255,.25)}
+
+  .fp{display:none}.fp.active{display:block}
+  .ft{font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:800;letter-spacing:-.02em;margin-bottom:4px}
+  .fs{font-size:.83rem;color:var(--muted);margin-bottom:18px}
+
+  /* fields */
+  .field{margin-bottom:13px}
+  .field label{display:block;font-size:.82rem;color:var(--muted2);margin-bottom:6px;font-weight:500}
+  .fw{position:relative}
+  .fi{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none}
+  .field input,.lsel{width:100%;padding:12px 16px 12px 42px;background:var(--surface);border:1px solid var(--border);border-radius:9px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:.9rem;outline:none;transition:all .2s}
+  .field input::placeholder{color:#3a4155}
+  .field input:focus,.lsel:focus{border-color:rgba(61,139,255,.4);background:var(--surface2);box-shadow:0 0 0 3px rgba(61,139,255,.08)}
+  .eye-btn{position:absolute;right:13px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);cursor:pointer}
+  .forgot-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;margin-top:-4px}
+  .rl{display:flex;align-items:center;gap:8px;font-size:.82rem;color:var(--muted);cursor:pointer}
+  .rl input[type=checkbox]{accent-color:var(--blue)}
+  .fl{font-size:.82rem;color:var(--blue);text-decoration:none}
+
+  .btn-sub{width:100%;padding:13px;background:var(--blue);border:none;border-radius:9px;color:#fff;font-family:'DM Sans',sans-serif;font-size:.95rem;font-weight:600;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 0 28px rgba(61,139,255,.3);margin-bottom:10px}
+  .btn-sub:hover{background:#5299ff;transform:translateY(-1px)}
+  .btn-sub.loading{pointer-events:none;opacity:.75}
+  .spinner{width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;display:none;animation:spin .7s linear infinite}
+  .btn-sub.loading .bt{display:none}
+  .btn-sub.loading .spinner{display:block}
+
+  .sw{text-align:center;font-size:.83rem;color:var(--muted)}
+  .sl{color:var(--blue);font-weight:500;cursor:pointer}
+
+  .sbw{display:none;gap:4px;margin-top:8px;height:3px}.sbw.visible{display:flex}
+  .ss{flex:1;border-radius:2px;background:var(--border)}
+  .fw-{background:#ff5c5c}.fm{background:#fbbf24}.fs-{background:var(--accent)}
+  .slb{font-size:.72rem;margin-top:4px;color:var(--muted);display:none}.slb.visible{display:block}
+  .fe{min-height:20px;color:#ff8b8b;font-size:.82rem;margin-bottom:10px}
+</style>
+</head>
+<body>
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+
+<!-- ── FULLSCREEN TAP OVERLAY ─────────────────────────────────────────── -->
+<div id="tapOverlay">
+  <div class="ov-logo">
+    <span class="ov-logo-dot"></span>MySmartEyes
+  </div>
+
+  <div class="ov-mic-wrap">
+    <div class="ov-ring"></div>
+    <div class="ov-ring"></div>
+    <div class="ov-ring"></div>
+    <div class="ov-mic">🎙️</div>
+  </div>
+
+  <div class="ov-text">
+    <h2>Welcome back</h2>
+    <p>Your AI vision assistant is ready. Click anywhere to enable voice and begin.</p>
+  </div>
+
+  <div class="ov-hint">
+    <span class="ov-hint-dot"></span>
+    Click anywhere to activate microphone
+  </div>
+</div>
+
+<!-- ── MAIN CARD ──────────────────────────────────────────────────────── -->
+<div class="card" id="mainCard">
+  <div class="logo"><span class="logo-dot"></span>MySmartEyes</div>
+
+  <!-- VOICE LOGIN -->
+  <div class="voice-section">
+    <div class="mic-wrap">
+      <div class="mic-ring" id="r1"></div>
+      <div class="mic-ring" id="r2"></div>
+      <div class="mic-ring" id="r3"></div>
+      <button class="mic-btn" id="micBtn" onclick="toggleVoice()">🎙️</button>
+    </div>
+    <div class="v-title" id="vTitle">Voice Login</div>
+    <div class="v-sub" id="vSub">Voice is active — say your username to begin</div>
+    <div class="v-status-badge show" id="vBadge"><div class="v-status-dot"></div><span id="vBadgeText">Mic ready</span></div>
+    <div class="v-transcript" id="vTrans"></div>
+    <div class="v-step" id="vStep"></div>
+  </div>
+
+  <div class="divider"><div class="divider-line"></div><span>or sign in manually</span><div class="divider-line"></div></div>
+
+  <div class="tab-row">
+    <button class="tab-btn active" onclick="switchTab('login')">Sign In</button>
+    <button class="tab-btn" onclick="switchTab('signup')">Create Account</button>
+  </div>
+
+  <!-- LOGIN FORM -->
+  <div class="fp active" id="pl">
+    <div class="ft">Welcome back</div>
+    <p class="fs">Enter your credentials to continue</p>
+    <div class="field"><label>Username</label><div class="fw"><span class="fi">👤</span><input type="text" placeholder="demo" id="lu"></div></div>
+    <div class="field" style="margin-bottom:0"><label>Password</label><div class="fw"><span class="fi">🔒</span><input type="password" placeholder="demo123" id="lp"><button class="eye-btn" onclick="tp('lp')" type="button">👁</button></div></div>
+    <div class="forgot-row"><label class="rl"><input type="checkbox"> Remember me</label><a href="#" class="fl">Forgot password?</a></div>
+    <div class="fe" id="le"></div>
+    <button class="btn-sub" id="lb" onclick="doLogin()"><span class="bt">Sign in →</span><div class="spinner"></div></button>
+    <div class="sw">No account? <span class="sl" onclick="switchTab('signup')">Create one</span></div>
+  </div>
+
+  <!-- SIGNUP FORM -->
+  <div class="fp" id="ps">
+    <div class="ft">Create account</div>
+    <p class="fs">Set up your MySmartEyes profile</p>
+    <div class="field"><label>Full Name</label><div class="fw"><span class="fi">👤</span><input type="text" placeholder="Your name" id="sn"></div></div>
+    <div class="field"><label>Username</label><div class="fw"><span class="fi">@</span><input type="text" placeholder="username" id="su"></div></div>
+    <div class="field"><label>Password</label><div class="fw"><span class="fi">🔒</span><input type="password" placeholder="Create a strong password" id="sp" oninput="cs(this.value)"><button class="eye-btn" onclick="tp('sp')" type="button">👁</button></div>
+      <div class="sbw" id="sb"><div class="ss" id="s1"></div><div class="ss" id="s2"></div><div class="ss" id="s3"></div><div class="ss" id="s4"></div></div>
+      <div class="slb" id="sl"></div>
+    </div>
+    <div class="field"><label>Preferred Language</label><div class="fw"><span class="fi">🌐</span><select class="lsel" id="slang"><option value="en">English</option><option value="hi">Hindi</option><option value="kn">Kannada</option></select></div></div>
+    <div class="fe" id="se"></div>
+    <button class="btn-sub" id="sb2" onclick="doSignup()"><span class="bt">Create account →</span><div class="spinner"></div></button>
+    <div class="sw">Have an account? <span class="sl" onclick="switchTab('login')">Sign in</span></div>
+  </div>
+</div>
+
+<script>
+// ── TTS ───────────────────────────────────────────────────────────────────
+function speak(text, cb) {
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = 'en-IN'; u.rate = 0.92;
+  if (cb) u.onend = cb;
+  window.speechSynthesis.speak(u);
+}
+
+// ── Voice state ───────────────────────────────────────────────────────────
+let vState = 'idle', vUser = '', vPass = '', retryCount = 0;
+const MAX_RETRIES = 2;
+let overlayDismissed = false;
+
+// ── Overlay: tap anywhere to begin ───────────────────────────────────────
+document.getElementById('tapOverlay').addEventListener('click', function(e) {
+  if (overlayDismissed) return;
+  overlayDismissed = true;
+
+  const ripple = document.createElement('div');
+  ripple.className = 'ripple-circle';
+  ripple.style.left = e.clientX + 'px';
+  ripple.style.top = e.clientY + 'px';
+  document.body.appendChild(ripple);
+  setTimeout(() => ripple.remove(), 700);
+
+  this.classList.add('hiding');
+  setTimeout(() => this.style.display = 'none', 650);
+
+  document.getElementById('mainCard').classList.add('visible');
+
+  speak('Welcome to MySmartEyes. I will sign you in by voice. Please say your username.', () => beginVoiceLogin(true));
+});
+
+function setVUI(title, sub) {
+  document.getElementById('vTitle').textContent = title;
+  document.getElementById('vSub').textContent = sub;
+}
+function setBadge(text) {
+  document.getElementById('vBadgeText').textContent = text;
+}
+function showTrans(t) {
+  const el = document.getElementById('vTrans');
+  el.textContent = t; el.classList.add('show');
+}
+function showStep(html) {
+  const el = document.getElementById('vStep');
+  el.innerHTML = html; el.classList.add('show');
+}
+function clearVUI() {
+  document.getElementById('vTrans').classList.remove('show');
+  document.getElementById('vStep').classList.remove('show');
+}
+
+function toggleVoice() {
+  if (vState === 'idle') beginVoiceLogin(false);
+  else cancelVoice();
+}
+
+function beginVoiceLogin(skipSpeak) {
+  vState = 'username'; retryCount = 0;
+  document.getElementById('micBtn').classList.add('listening');
+  ['r1','r2','r3'].forEach(id => document.getElementById(id).classList.add('on'));
+  setVUI('Listening...', 'Say your username');
+  setBadge('Listening for username');
+  showStep('Step <strong>1 of 2</strong> — say your <strong>username</strong>');
+  if (!skipSpeak) speak('Please say your username.', () => listenStep('username'));
+  else listenStep('username');
+}
+
+function cancelVoice() {
+  vState = 'idle'; vUser = ''; vPass = ''; retryCount = 0;
+  document.getElementById('micBtn').classList.remove('listening','processing');
+  ['r1','r2','r3'].forEach(id => document.getElementById(id).classList.remove('on'));
+  setVUI('Voice Login', 'Tap mic to try again');
+  setBadge('Mic ready');
+  clearVUI();
+  window.speechSynthesis.cancel();
+}
+
+function listenStep(step) {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { speak('Voice not supported.'); cancelVoice(); return; }
+  const r = new SR();
+  r.lang = 'en-IN'; r.start();
+  r.onresult = (e) => {
+    const raw = e.results[0][0].transcript.trim();
+    const cleaned = raw.toLowerCase().replace(/\s+/g, '');
+    showTrans(`"${raw}"`);
+    retryCount = 0;
+    if (step === 'username') {
+      vUser = cleaned; document.getElementById('lu').value = vUser;
+      vState = 'password';
+      setVUI('Got it!', 'Now say your password');
+      setBadge('Listening for password');
+      showStep(`Username: <strong>${vUser}</strong> — Step <strong>2 of 2</strong>: say your <strong>password</strong>`);
+      speak('Got it. Now say your password.', () => listenStep('password'));
+    } else {
+      vPass = cleaned;
+      document.getElementById('lp').value = vPass;
+      vState = 'logging_in';
+      document.getElementById('micBtn').classList.remove('listening');
+      document.getElementById('micBtn').classList.add('processing');
+      setVUI('Signing in...', 'Please wait');
+      setBadge('Authenticating');
+      showStep('Signing you in...');
+      speak('Signing in now.', doVoiceLogin);
+    }
+  };
+
+  r.onerror = (e) => {
+    if (e.error === 'not-allowed') {
+      setVUI('Mic blocked', 'Allow mic access or use the form below');
+      setBadge('Blocked'); cancelVoice(); return;
+    }
+    retryCount++;
+    if (retryCount >= MAX_RETRIES) {
+      // Silently fall back — no more looping
+      cancelVoice();
+      setVUI('Use the form below', 'Voice had trouble — type your credentials');
+      setBadge('Manual mode');
+      setTimeout(() => document.getElementById('lu').focus(), 300);
+    } else {
+      const left = MAX_RETRIES - retryCount;
+      showStep(`Listening again — ${left} attempt${left > 1 ? 's' : ''} left. Say your <strong>${step}</strong>`);
+      setTimeout(() => { if (vState !== 'idle') listenStep(step); }, 1000);
+    }
+  };
+}
+
+async function doVoiceLogin() {
+  try {
+    const res = await fetch('/login', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ action: 'login', username: vUser, password: vPass })
+    });
+    const d = await res.json();
+    if (d.status === 'success') {
+      setVUI('Welcome!', 'Login successful');
+      setBadge('Signed in');
+      speak('Login successful. Welcome to MySmartEyes!', () => window.location.href = d.redirect);
+    } else {
+      const msg = d.message || 'Login failed. Please try again.';
+      document.getElementById('le').textContent = msg;
+      speak(msg + ' Please try the form or tap the mic to try voice again.', cancelVoice);
+    }
+  } catch {
+    speak('Could not reach the server. Please use the form below.', cancelVoice);
+  }
+}
+
+// ── Manual auth ───────────────────────────────────────────────────────────
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', (tab === 'login') === (i === 0)));
+  document.getElementById('pl').classList.toggle('active', tab === 'login');
+  document.getElementById('ps').classList.toggle('active', tab === 'signup');
+}
+
+function tp(id) {
+  const i = document.getElementById(id);
+  i.type = i.type === 'text' ? 'password' : 'text';
+}
+
+function cs(val) {
+  const bar = document.getElementById('sb'), lbl = document.getElementById('sl');
+  bar.classList.toggle('visible', val.length > 0);
+  lbl.classList.toggle('visible', val.length > 0);
+  let score = [val.length >= 8, /[A-Z]/.test(val), /[0-9]/.test(val), /[^A-Za-z0-9]/.test(val)].filter(Boolean).length;
+  const cls = score <= 1 ? 'fw-' : score <= 2 ? 'fm' : 'fs-';
+  ['s1','s2','s3','s4'].forEach((id, i) => {
+    const el = document.getElementById(id);
+    el.className = 'ss';
+    if (i < score) el.classList.add(cls);
+  });
+  lbl.textContent = ['','Weak','Fair','Strong','Very Strong'][score] || '';
+  lbl.style.color = score <= 1 ? 'var(--error)' : score <= 2 ? '#fbbf24' : 'var(--accent)';
+}
+
+async function authFetch(action, payload, btnId, errId) {
+  const btn = document.getElementById(btnId), err = document.getElementById(errId);
+  err.textContent = ''; btn.classList.add('loading');
+  try {
+    const res = await fetch('/login', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ action, ...payload })
+    });
+    const d = await res.json();
+    if (d.status !== 'success') { err.textContent = d.message || 'Error.'; return; }
+    window.location.href = d.redirect;
+  } catch { err.textContent = 'Could not reach server.'; }
+  finally { btn.classList.remove('loading'); }
+}
+
+function doLogin() {
+  authFetch('login', {
+    username: document.getElementById('lu').value.trim(),
+    password: document.getElementById('lp').value
+  }, 'lb', 'le');
+}
+function doSignup() {
+  authFetch('signup', {
+    name: document.getElementById('sn').value.trim(),
+    username: document.getElementById('su').value.trim(),
+    password: document.getElementById('sp').value,
+    lang: document.getElementById('slang').value
+  }, 'sb2', 'se');
+}
+</script>
+</body>
+</html>

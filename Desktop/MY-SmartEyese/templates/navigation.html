@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MySmartEyes - Navigation</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#080b10;--bg2:#0d1117;--surface:#111620;--surface2:#161c2a;--border:rgba(255,255,255,0.07);--blue:#3d8bff;--blue-dim:rgba(61,139,255,0.12);--blue-glow:rgba(61,139,255,0.3);--text:#e8ecf4;--muted:#6b7589;--muted2:#3a4458;--accent:#00e5b4;--danger:#ff5c5c;--sidebar-w:240px}
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0} body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:15px;line-height:1.5;height:100vh;overflow:hidden;display:flex}
+  body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");pointer-events:none;z-index:0;opacity:.4}
+  /* Sidebar */
+  .sidebar{width:var(--sidebar-w);height:100vh;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;position:relative;z-index:10}
+  .sidebar-logo{display:flex;align-items:center;gap:10px;padding:24px 22px 20px;border-bottom:1px solid var(--border);font-family:'Syne',sans-serif;font-weight:800;font-size:1.1rem;letter-spacing:-.02em;color:var(--text);text-decoration:none}
+  .logo-dot{width:8px;height:8px;border-radius:50%;background:var(--blue);box-shadow:0 0 10px var(--blue-glow)}
+  .ai-status{margin:16px 14px 8px;padding:10px 13px;background:rgba(0,229,180,.1);border:1px solid rgba(0,229,180,.18);border-radius:10px;display:flex;align-items:center;gap:9px;font-size:.78rem;color:var(--accent);font-weight:500}
+  .ai-pulse{width:7px;height:7px;border-radius:50%;background:var(--accent);animation:blink 1.4s ease-in-out infinite}
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:.5}}
+  @keyframes micRing{0%{opacity:0;transform:scale(.8)}50%{opacity:.5}100%{opacity:0;transform:scale(1.1)}}
+  .sidebar-nav{flex:1;padding:10px;overflow-y:auto}
+  .nav-section-label{font-size:.68rem;color:var(--muted2);font-weight:600;letter-spacing:.1em;text-transform:uppercase;padding:12px 12px 6px}
+  .nav-item{display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:9px;color:var(--muted);text-decoration:none;font-size:.875rem;cursor:pointer;transition:all .18s;margin-bottom:2px;border:1px solid transparent}
+  .nav-item:hover{background:var(--surface);color:var(--text);border-color:var(--border)}
+  .nav-item.active{background:var(--blue-dim);color:var(--blue);border-color:rgba(61,139,255,.18);font-weight:500}
+  .sidebar-user{padding:14px;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px}
+  .user-avatar{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--blue),#7c3aed);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:700;font-size:.78rem;color:#fff}
+  .user-name{font-size:.83rem;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .user-role{font-size:.72rem;color:var(--muted)}
+  /* Main layout */
+  .main{flex:1;display:flex;flex-direction:column;height:100vh;overflow:hidden;position:relative;z-index:1}
+  .topbar{display:flex;align-items:center;justify-content:space-between;padding:16px 28px;border-bottom:1px solid var(--border);background:rgba(8,11,16,.6);backdrop-filter:blur(12px);flex-shrink:0}
+  .page-title{font-family:'Syne',sans-serif;font-size:1.05rem;font-weight:700}
+  .page-crumb{font-size:.78rem;color:var(--muted);display:flex;align-items:center;gap:6px}
+  .topbar-right{display:flex;align-items:center;gap:10px}
+  .lang-select,.icon-btn{background:var(--surface);border:1px solid var(--border);color:var(--muted)}
+  .lang-select{padding:7px 12px;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:.8rem;outline:none;cursor:pointer}
+  .icon-btn{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+  /* Body */
+  .body-content{flex:1;display:grid;grid-template-columns:1fr 320px;overflow:hidden}
+  /* Navigation panel */
+  .nav-main{display:flex;flex-direction:column;padding:24px;gap:20px;overflow-y:auto}
+  /* Location card */
+  .location-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;display:flex;align-items:flex-start;gap:14px}
+  .loc-icon-big{width:44px;height:44px;border-radius:12px;background:var(--blue-dim);border:1px solid rgba(61,139,255,.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:1.3rem}
+  .loc-title{font-family:'Syne',sans-serif;font-weight:700;font-size:.95rem;margin-bottom:4px}
+  .loc-area{font-size:.85rem;color:var(--text);font-weight:500;margin-bottom:3px}
+  .loc-coords-small{font-size:.72rem;color:var(--muted);margin-bottom:6px}
+  .loc-gps-row{display:flex;align-items:center;gap:6px;font-size:.72rem;font-weight:600;color:var(--accent)}
+  .gps-dot{width:5px;height:5px;border-radius:50%;background:var(--accent);animation:blink 1.2s infinite}
+  .loc-refresh-btn{margin-left:auto;padding:5px 12px;background:var(--blue-dim);border:1px solid rgba(61,139,255,.2);border-radius:7px;color:var(--blue);font-size:.75rem;cursor:pointer;font-family:'DM Sans',sans-serif}
+  /* Destination input */
+  .dest-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px}
+  .dest-label{font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:10px;font-weight:500}
+  .dest-input-row{display:flex;gap:8px;margin-bottom:16px}
+  .dest-input{flex:1;padding:12px 16px;background:var(--bg);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:.9rem;outline:none;transition:border-color .2s}
+  .dest-input:focus{border-color:rgba(61,139,255,.4)}
+  .go-btn{padding:12px 20px;background:var(--blue);border:none;border-radius:10px;color:#fff;font-family:'DM Sans',sans-serif;font-size:.88rem;font-weight:600;cursor:pointer}
+  .go-btn:hover{background:#5299ff}
+  .mic-dest-btn{width:44px;height:44px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:1.1rem;flex-shrink:0}
+  .mic-dest-btn.active{background:rgba(0,229,180,.15);border-color:rgba(0,229,180,.3)}
+  /* Quick chips */
+  .quick-label{font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px;font-weight:500}
+  .quick-chips{display:flex;flex-wrap:wrap;gap:8px}
+  .quick-chip{padding:7px 14px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:.78rem;color:var(--muted);cursor:pointer;transition:all .18s}
+  .quick-chip:hover{background:var(--blue-dim);border-color:rgba(61,139,255,.3);color:var(--blue)}
+  /* Route status */
+  .route-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;display:none}
+  .route-card.visible{display:block}
+  .route-header-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+  .route-badge{display:flex;align-items:center;gap:6px;font-size:.72rem;color:var(--accent);font-weight:600;text-transform:uppercase}
+  .route-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);animation:blink 1.4s infinite}
+  .stop-btn{padding:5px 12px;background:rgba(255,80,80,.1);border:1px solid rgba(255,80,80,.25);border-radius:6px;color:#ff5050;font-size:.72rem;cursor:pointer}
+  .route-dest-row{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+  .route-dest-icon{width:36px;height:36px;border-radius:9px;background:rgba(0,229,180,.1);border:1px solid rgba(0,229,180,.2);display:flex;align-items:center;justify-content:center;font-size:1.1rem}
+  .route-dest-name{font-family:'Syne',sans-serif;font-weight:700;font-size:.95rem}
+  .route-dest-sub{font-size:.75rem;color:var(--muted);margin-top:2px}
+  .route-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+  .route-stat{background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:10px;text-align:center}
+  .route-stat-val{font-family:'Syne',sans-serif;font-weight:700;font-size:1rem}
+  .route-stat-label{font-size:.65rem;color:var(--muted);margin-top:2px}
+  .open-maps-btn{width:100%;padding:11px;background:var(--blue);border:none;border-radius:9px;color:#fff;font-family:'DM Sans',sans-serif;font-size:.88rem;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px}
+  .open-maps-btn:hover{background:#5299ff}
+  /* Right voice panel */
+  .voice-side{border-left:1px solid var(--border);background:var(--bg2);display:flex;flex-direction:column;overflow:hidden}
+  .voice-side-inner{flex:1;padding:20px;display:flex;flex-direction:column;gap:16px;overflow-y:auto}
+  .vs-title{font-family:'Syne',sans-serif;font-size:.82rem;font-weight:700;margin-bottom:4px}
+  .mic-ring-wrap{position:relative;display:flex;align-items:center;justify-content:center;margin:10px 0}
+  .mic-ring{position:absolute;border-radius:50%;border:1.5px solid rgba(61,139,255,.15);animation:micRing 2s ease-in-out infinite}
+  .ring1{width:70px;height:70px}.ring2{width:90px;height:90px;animation-delay:.4s}.ring3{width:110px;height:110px;animation-delay:.8s}
+  .mic-big{width:54px;height:54px;border-radius:50%;background:var(--blue);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 0 30px rgba(61,139,255,.35);color:#fff;font-size:1.3rem;position:relative;z-index:2}
+  .mic-big.active{background:var(--accent)}
+  .voice-out-box{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;font-size:.82rem;color:var(--muted);line-height:1.5;min-height:80px;font-style:italic}
+  .vs-cmd-label{font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:500;margin-bottom:6px}
+  .vs-cmds{display:flex;flex-wrap:wrap;gap:6px}
+  .vs-chip{padding:5px 10px;border-radius:100px;border:1px solid var(--border);background:var(--surface);color:var(--muted);font-size:.72rem;cursor:pointer;white-space:nowrap}
+  .vs-chip:hover{border-color:rgba(61,139,255,.3);color:var(--blue)}
+  .lang-row{display:flex;gap:6px;margin-top:auto;padding-top:12px;border-top:1px solid var(--border)}
+  .lang-btn{flex:1;padding:6px;background:var(--surface);border:1px solid var(--border);border-radius:7px;font-size:.72rem;color:var(--muted);cursor:pointer;font-family:'DM Sans',sans-serif}
+  .lang-btn.active{background:var(--blue-dim);border-color:rgba(61,139,255,.3);color:var(--blue)}
+  @media(max-width:1100px){.sidebar,.voice-side{display:none}.body-content{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<aside class="sidebar">
+  <a class="sidebar-logo" href="{{ url_for('index') }}"><div class="logo-dot"></div>MySmartEyes</a>
+  <div class="ai-status"><div class="ai-pulse"></div>Navigation Mode</div>
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">Core</div>
+    <a class="nav-item" href="{{ url_for('app_page') }}">Live Detection</a>
+    <div class="nav-item active">Navigation</div>
+    <div class="nav-section-label" style="margin-top:8px;">Tools</div>
+    <div class="nav-item">History</div>
+  </nav>
+  <div class="sidebar-user">
+    <div class="user-avatar">{{ (user_name or 'U')[0] }}</div>
+    <div><div class="user-name">{{ user_name }}</div><div class="user-role">Session · {{ user_lang|upper }}</div></div>
+  </div>
+</aside>
+
+<div class="main">
+  <div class="topbar">
+    <div><div class="page-title">Navigation</div><div class="page-crumb"><span>Dashboard</span><span>›</span><span style="color:var(--blue)">Route Planning</span></div></div>
+    <div class="topbar-right">
+      <select class="lang-select" id="langSelect" onchange="switchLang(this.value)">
+        <option value="en" {% if user_lang=='en' %}selected{% endif %}>English</option>
+        <option value="hi" {% if user_lang=='hi' %}selected{% endif %}>हिंदी</option>
+        <option value="kn" {% if user_lang=='kn' %}selected{% endif %}>ಕನ್ನಡ</option>
+      </select>
+      <button class="icon-btn" onclick="logout()">⎋</button>
+    </div>
+  </div>
+
+  <div class="body-content">
+    <!-- Left: Main navigation UI -->
+    <div class="nav-main">
+
+      <!-- Current location card -->
+      <div class="location-card">
+        <div class="loc-icon-big">📍</div>
+        <div style="flex:1">
+          <div class="loc-title">Your Current Location</div>
+          <div class="loc-area" id="locArea">Detecting...</div>
+          <div class="loc-coords-small" id="locCoords">Waiting for GPS...</div>
+          <div class="loc-gps-row"><div class="gps-dot"></div><span id="locStatus">Locating</span></div>
+        </div>
+        <button class="loc-refresh-btn" onclick="updateGeo()">🔄 Refresh</button>
+      </div>
+
+      <!-- Destination input -->
+      <div class="dest-card">
+        <div class="dest-label">Where do you want to go?</div>
+        <div class="dest-input-row">
+          <input class="dest-input" type="text" id="destInput" placeholder="Enter destination or speak it..." />
+          <button class="mic-dest-btn" id="micDestBtn" onclick="listenDest()">🎙️</button>
+          <button class="go-btn" onclick="startRoute()">Go →</button>
+        </div>
+        <div class="quick-label">Quick destinations</div>
+        <div class="quick-chips">
+          <div class="quick-chip" onclick="setDest('Nearest Hospital')">🏥 Hospital</div>
+          <div class="quick-chip" onclick="setDest('Nearest Pharmacy')">💊 Pharmacy</div>
+          <div class="quick-chip" onclick="setDest('Nearest Bus Stop')">🚌 Bus Stop</div>
+          <div class="quick-chip" onclick="setDest('Nearest Cafe')">☕ Cafe</div>
+          <div class="quick-chip" onclick="setDest('Home')">🏠 Home</div>
+          <div class="quick-chip" onclick="setDest('Nearest ATM')">🏧 ATM</div>
+        </div>
+      </div>
+
+      <!-- Route result (shown after startRoute) -->
+      <div class="route-card" id="routeCard">
+        <div class="route-header-row">
+          <div class="route-badge"><div class="route-dot"></div>Route Ready</div>
+          <button class="stop-btn" onclick="stopRoute()">✕ Stop</button>
+        </div>
+        <div class="route-dest-row">
+          <div class="route-dest-icon">📍</div>
+          <div><div class="route-dest-name" id="routeDestName">—</div><div class="route-dest-sub" id="routeFromName">From your current location</div></div>
+        </div>
+        <div class="route-stats">
+          <div class="route-stat"><div class="route-stat-val" id="routeETA">—</div><div class="route-stat-label">ETA (walk)</div></div>
+          <div class="route-stat"><div class="route-stat-val" id="routeDist">—</div><div class="route-stat-label">Distance</div></div>
+          <div class="route-stat"><div class="route-stat-val" id="routeMode">🚶</div><div class="route-stat-label">Mode</div></div>
+        </div>
+        <button class="open-maps-btn" id="openMapsBtn" onclick="openInMaps()">🗺️ Open in Google Maps</button>
+      </div>
+
+    </div>
+
+    <!-- Right: Voice assistant panel -->
+    <div class="voice-side">
+      <div class="voice-side-inner">
+        <div>
+          <div class="vs-title">Voice Assistant</div>
+          <div style="font-size:.72rem;color:var(--muted)">Speak your destination or ask for help</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:8px">
+          <div class="mic-ring-wrap">
+            <div class="mic-ring ring1"></div><div class="mic-ring ring2"></div><div class="mic-ring ring3"></div>
+            <button class="mic-big" id="micMainBtn" onclick="listenDest()">🎙️</button>
+          </div>
+          <div style="font-size:.78rem;color:var(--muted);text-align:center" id="micStatusText">Tap to speak your destination</div>
+        </div>
+        <div class="voice-out-box" id="voiceOut">Say where you want to go. For example: "Take me to Apollo Hospital"</div>
+        <div>
+          <div class="vs-cmd-label">Voice commands</div>
+          <div class="vs-cmds">
+            <div class="vs-chip" onclick="sendTextCmd('where am i')">Where am I?</div>
+            <div class="vs-chip" onclick="listenDest()">Navigate to...</div>
+            <div class="vs-chip" onclick="sendTextCmd('stop')">Stop</div>
+            <div class="vs-chip" onclick="sendTextCmd('help')">Help</div>
+          </div>
+        </div>
+        <div class="lang-row">
+          <button class="lang-btn {% if user_lang=='en' %}active{% endif %}" onclick="switchLang('en')">EN</button>
+          <button class="lang-btn {% if user_lang=='hi' %}active{% endif %}" onclick="switchLang('hi')">हिं</button>
+          <button class="lang-btn {% if user_lang=='kn' %}active{% endif %}" onclick="switchLang('kn')">ಕನ್ನಡ</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  let currentCoords = null;
+  let currentDestination = null;
+
+  // ── Helpers ───────────────────────────────────────────────────────────────
+  const getLang = () => document.getElementById('langSelect').value || 'en';
+  const langCode = () => ({ hi:'hi-IN', kn:'kn-IN', en:'en-IN' })[getLang()] || 'en-IN';
+
+  function speak(text) {
+    if (!text) return;
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text.replace(/"/g, ''));
+    u.lang = langCode(); u.rate = 0.92;
+    window.speechSynthesis.speak(u);
+  }
+
+  function setVoiceOut(text) {
+    document.getElementById('voiceOut').textContent = text;
+  }
+
+  // ── Geolocation — real area name via Nominatim ────────────────────────────
+  function updateGeo() {
+    document.getElementById('locStatus').textContent = 'Locating...';
+    document.getElementById('locArea').textContent = 'Detecting...';
+    if (!navigator.geolocation) {
+      document.getElementById('locArea').textContent = 'Not supported';
+      document.getElementById('locStatus').textContent = 'Unavailable';
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(async pos => {
+      const lat = pos.coords.latitude, lon = pos.coords.longitude;
+      currentCoords = { lat, lon };
+      document.getElementById('locCoords').textContent = `${lat.toFixed(4)}° N, ${lon.toFixed(4)}° E`;
+      document.getElementById('locStatus').textContent = 'GPS Active';
+      try {
+        const r = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`);
+        const d = await r.json();
+        const a = d.address;
+        const area = a.suburb || a.neighbourhood || a.village || a.town || a.city || a.county || 'Unknown area';
+        const city = a.city || a.town || a.state_district || a.state || '';
+        const fullArea = city ? `${area}, ${city}` : area;
+        document.getElementById('locArea').textContent = fullArea;
+        setVoiceOut(`You are currently in ${fullArea}.`);
+        speak(`You are in ${fullArea}.`);
+      } catch {
+        document.getElementById('locArea').textContent = 'Location found';
+      }
+    }, err => {
+      document.getElementById('locArea').textContent = 'Permission denied';
+      document.getElementById('locStatus').textContent = 'Blocked';
+    });
+  }
+
+  // ── Destination & Route ───────────────────────────────────────────────────
+  function setDest(dest) {
+    document.getElementById('destInput').value = dest;
+    startRoute();
+  }
+
+  function startRoute() {
+    const dest = document.getElementById('destInput').value.trim();
+    if (!dest) { speak('Please enter a destination.'); return; }
+    currentDestination = dest;
+    document.getElementById('routeDestName').textContent = dest;
+    document.getElementById('routeFromName').textContent = currentCoords
+      ? `From ${document.getElementById('locArea').textContent}`
+      : 'From your current location';
+
+    // Estimate: rough walking speed 5km/h. For real use, this opens Maps.
+    const distKm = (1 + Math.random() * 3).toFixed(1);
+    const etaMin = Math.round((distKm / 5) * 60);
+    document.getElementById('routeDist').textContent = distKm + ' km';
+    document.getElementById('routeETA').textContent = etaMin + ' min';
+
+    document.getElementById('routeCard').classList.add('visible');
+    const msg = `Route to ${dest} is ready. Estimated ${etaMin} minutes. Tap Open in Google Maps to start navigation.`;
+    setVoiceOut(msg);
+    speak(msg);
+  }
+
+  function stopRoute() {
+    document.getElementById('routeCard').classList.remove('visible');
+    document.getElementById('destInput').value = '';
+    currentDestination = null;
+    setVoiceOut('Navigation stopped.');
+    speak('Navigation stopped.');
+  }
+
+  function openInMaps() {
+    if (!currentDestination) return;
+    let url;
+    if (currentCoords) {
+      url = `https://www.google.com/maps/dir/${currentCoords.lat},${currentCoords.lon}/${encodeURIComponent(currentDestination)}`;
+    } else {
+      url = `https://www.google.com/maps/search/${encodeURIComponent(currentDestination)}`;
+    }
+    window.open(url, '_blank');
+  }
+
+  // ── Voice listen ──────────────────────────────────────────────────────────
+  function listenDest() {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) { alert('Use Chrome for voice support'); return; }
+    const r = new SR();
+    r.lang = langCode();
+    r.start();
+    document.getElementById('micMainBtn').classList.add('active');
+    document.getElementById('micDestBtn').classList.add('active');
+    document.getElementById('micStatusText').textContent = 'Listening...';
+    setVoiceOut('Listening...');
+    r.onresult = async (e) => {
+      const text = e.results[0][0].transcript;
+      setVoiceOut(`You said: "${text}"`);
+      await sendTextCmd(text);
+    };
+    r.onerror = r.onend = () => {
+      document.getElementById('micMainBtn').classList.remove('active');
+      document.getElementById('micDestBtn').classList.remove('active');
+      document.getElementById('micStatusText').textContent = 'Tap to speak your destination';
+    };
+  }
+
+  async function sendTextCmd(text) {
+    try {
+      const res = await fetch('/voice_text', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ text })
+      });
+      const data = await res.json();
+      setVoiceOut(data.response);
+      speak(data.response);
+      if (data.action === 'navigate') {
+        // Extract destination from text
+        const dest = text.replace(/take me to|navigate to|go to|directions to/gi, '').trim();
+        if (dest) { document.getElementById('destInput').value = dest; startRoute(); }
+      }
+      if (data.action === 'location') updateGeo();
+      if (data.action === 'stop') stopRoute();
+      if (data.action === 'set_lang' && data.lang) switchLang(data.lang);
+    } catch (err) {
+      setVoiceOut('Could not connect. Please try again.');
+    }
+  }
+
+  // ── Language ──────────────────────────────────────────────────────────────
+  async function switchLang(lang) {
+    document.getElementById('langSelect').value = lang;
+    document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.textContent.trim() === {en:'EN', hi:'हिं', kn:'ಕನ್ನಡ'}[lang]));
+    try {
+      await fetch('{{ url_for("set_lang") }}', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ lang }) });
+    } catch {}
+    const msg = lang === 'hi' ? 'भाषा हिंदी में बदल दी गई।' : lang === 'kn' ? 'ಭಾಷೆಯನ್ನು ಕನ್ನಡಕ್ಕೆ ಬದಲಾಯಿಸಲಾಗಿದೆ.' : 'Language switched to English.';
+    setVoiceOut(msg);
+    speak(msg);
+  }
+
+  async function logout() {
+    const res = await fetch('{{ url_for("logout") }}', { method:'POST' });
+    const data = await res.json();
+    if (data.redirect) window.location.href = data.redirect;
+  }
+
+  // ── Init ──────────────────────────────────────────────────────────────────
+  updateGeo();
+  // Greet on load
+  fetch('{{ url_for("greeting") }}').then(r => r.json()).then(d => {
+    if (d.status === 'success') setVoiceOut(d.greeting);
+  }).catch(() => {});
+</script>
+</body>
+</html>
